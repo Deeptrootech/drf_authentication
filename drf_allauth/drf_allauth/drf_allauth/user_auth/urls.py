@@ -6,7 +6,7 @@ from dj_rest_auth.views import LoginView, LogoutView, UserDetailsView, PasswordR
     PasswordChangeView
 from rest_framework_simplejwt.views import TokenVerifyView
 
-from .views import FacebookLogin
+from .views import FacebookLogin, GoogleLoginView
 
 app_name = "user_auth"
 
@@ -40,4 +40,5 @@ urlpatterns = [
 
     # 3) social media
     path('facebook/', FacebookLogin.as_view(), name='fb_login'),
+    path("google/", GoogleLoginView.as_view(), name="google_login")
 ]
