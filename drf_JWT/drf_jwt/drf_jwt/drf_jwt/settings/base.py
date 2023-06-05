@@ -71,7 +71,7 @@ LOGIN_REDIRECT_URL = "user:redirect"
 ROOT_URLCONF = "drf_jwt.urls"
 
 SIMPLE_JWT = {
-    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=5),
+    "ACCESS_TOKEN_LIFETIME": timedelta(minutes=50),
     "REFRESH_TOKEN_LIFETIME": timedelta(days=1),
     "TOKEN_OBTAIN_SERIALIZER": "main.serializers.MyTokenObtainPairSerializer",
 }
