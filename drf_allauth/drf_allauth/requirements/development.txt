@@ -12,3 +12,5 @@ black==22.10.0
 pylint-django==2.5.3
 pre-commit==2.20.0
 factory-boy==3.2.1
+dj-rest-auth==4.0.1
+django-allauth==0.54.0
