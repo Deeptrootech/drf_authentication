@@ -41,4 +41,14 @@ urlpatterns = [
     # 3) social media
     path('facebook/', FacebookLogin.as_view(), name='fb_login'),
     path("google/", GoogleLoginView.as_view(), name="google_login")
+    # Reference:
+    # https://www.rootstrap.com/blog/how-to-integrate-google-login-in-your-django-rest-api-using-the-dj-rest-auth-library
+    # https://dj-rest-auth.readthedocs.io/en/latest/installation.html
+
+    # Helpfull urls:
+    # https://console.cloud.google.com/apis/credentials?organizationId=854549492366&project=expanded-goal-388913
+    # https://developers.google.com/oauthplayground/
+
+    # This is for getting code after selecting auth emailaccount.
+    # https://accounts.google.com/o/oauth2/v2/auth/oauthchooseaccount?redirect_uri=http%3A%2F%2Flocalhost%3A8000%2Fredirect&prompt=consent&response_type=code&client_id=75689505196-425ppqj1ggje4mlt8958s5ga4l7tpgo6.apps.googleusercontent.com&scope=openid%20email%20profile&access_type=offline&service=lso&o2v=2&flowName=GeneralOAuthFlow
 ]

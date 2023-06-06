@@ -98,6 +98,15 @@ REST_FRAMEWORK = {
     "PAGE_SIZE": 10
 }
 
+SOCIALACCOUNT_PROVIDERS = {
+    "google": {
+        "APP": {
+            "client_id": "75689505196-425ppqj1ggje4mlt8958s5ga4l7tpgo6.apps.googleusercontent.com",
+            "secret": "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",
+        },
+    },
+}
+
 # some of below configurations will not be used because we are using JWT(cookie):
 # https://dj-rest-auth.readthedocs.io/en/latest/configuration.html#
 # (GOOD) https://jkaylight.medium.com/django-rest-framework-authentication-with-dj-rest-auth-4d5e606cde4d
