@@ -68,7 +68,6 @@ class LoginSerializer(TokenObtainPairSerializer):
         fields = ('email', 'password', 'token')
 
     def validate(self, data):
-        breakpoint()
         # If we want to add custom validation before calling superuser's validate method
         email = data.get('email', None)
         password = data.get('password', None)

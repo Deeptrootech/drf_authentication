@@ -48,7 +48,6 @@ class RegistrationAPIView(APIView):
         return Response({'Status': 'You cannot view all users data.....'})
 
     def post(self, request):
-        breakpoint()
         email = request.data['email']
         print(email)
 
@@ -206,7 +205,7 @@ class LoginAPIView(APIView):
             # login user
             authenticated_user = validated_data["user"]
             login(request, authenticated_user)
-            
+
             return Response(
                 {'msg': 'Login successful', 'user': validated_data['email'], 'token': validated_data['token']},
                 status=status.HTTP_200_OK)
