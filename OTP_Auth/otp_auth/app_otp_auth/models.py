@@ -49,7 +49,7 @@ class UserMaster(AbstractUser):
     username = None
     mobile = models.CharField(max_length=11, blank=True)
     email = models.EmailField(db_index=True, unique=True)
-    is_confirmed = models.BooleanField(default=False)  # default is True when not using otp email verification
+    is_confirmed = models.BooleanField(default=False)  # default is False when not using otp email verification
     otp = models.IntegerField(editable=False, default=False)  # storing otp
     is_used = models.BooleanField(default=False)  # it becomes true when otp stored in db is already used
 

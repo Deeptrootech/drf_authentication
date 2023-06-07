@@ -33,11 +33,38 @@ def generateOTP():
 
 
 # verifying OTP
-
-
 def verifyOTP(one_time):
     answer = totp.verify(one_time)
     return answer
+
+
+class LoginAPIView(APIView):
+    """
+    Used to generates a jwt token and login user.
+    """
+    permission_classes = (AllowAny,)
+    serializer_class = LoginSerializer
+
+    def post(self, request):
+        serializer = self.serializer_class(data=request.data)
+
+        # Below, will call validate() method of related serializer.
+        # which will check some custom validations and.
+        # if input data validated then call authenticate() method to verifying the user credentials.
+        # if user is not none and is_active then generate JWT token.
+        # and return it in validated data.
+        if serializer.is_valid():
+            validated_data = serializer.validated_data
+
+            # login user
+            authenticated_user = validated_data["user"]
+            login(request, authenticated_user)
+
+            return Response(
+                {'msg': 'Login successful', 'user': validated_data['email'], 'token': validated_data['token']},
+                status=status.HTTP_200_OK)
+        else:
+            return Response({'msg': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
 
 
 class RegistrationAPIView(APIView):
@@ -49,16 +76,12 @@ class RegistrationAPIView(APIView):
 
     def post(self, request):
         email = request.data['email']
-        print(email)
-
         data = MyUser.objects.filter(email=email)
-        print('data ', data)
 
         if data.exists():
             return Response({'msg': 'Already registered'}, status=status.HTTP_409_CONFLICT)
         else:
             serializer = self.serializer_class(data=request.data)
-            print("ser", serializer)
             first_name = request.data['first_name']
 
             if serializer.is_valid(raise_exception=True):
@@ -90,9 +113,9 @@ class VerifyOTPView(APIView):
         serializer = VerifyOTPSerializer(data=request.data)
         email = request.data['email']
         one_time = request.data['otp']
-        print('one_time_password', one_time)
+
         one = verifyOTP(one_time)
-        print('one', one)
+
         if one:
             MyUser.objects.filter(email=email).update(
                 is_confirmed=True, is_used=True, otp=one_time)
@@ -102,8 +125,6 @@ class VerifyOTPView(APIView):
 
 
 # it will send the mail with changed password which is generated randomly
-
-
 class ForgotPasswordView(APIView):
     serializer_class = ForgotPasswordSerializer
     permission_classes = (AllowAny,)
@@ -182,32 +203,3 @@ class ResetPasswordView(APIView):
                                 status=status.HTTP_409_CONFLICT)
         else:
             return Response({'msg': 'Invalid request'}, status=status.HTTP_400_BAD_REQUEST)
-
-
-class LoginAPIView(APIView):
-    """
-    Used to generates a jwt token and login user.
-    """
-    permission_classes = (AllowAny,)
-    serializer_class = LoginSerializer
-
-    def post(self, request):
-        serializer = self.serializer_class(data=request.data)
-
-        # Below, will call validate() method of related serializer.
-        # which will check some custom validations and.
-        # if input data validated then call authenticate() method to verifying the user credentials.
-        # if user is not none and is_active then generate JWT token.
-        # and return it in validated data.
-        if serializer.is_valid():
-            validated_data = serializer.validated_data
-
-            # login user
-            authenticated_user = validated_data["user"]
-            login(request, authenticated_user)
-
-            return Response(
-                {'msg': 'Login successful', 'user': validated_data['email'], 'token': validated_data['token']},
-                status=status.HTTP_200_OK)
-        else:
-            return Response({'msg': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
