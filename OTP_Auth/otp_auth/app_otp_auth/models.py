@@ -2,73 +2,54 @@ import os, jwt
 from datetime import datetime, timedelta
 from django.conf import settings
 from django.contrib.auth.models import (
-    AbstractBaseUser, BaseUserManager, PermissionsMixin
-)
+    BaseUserManager, PermissionsMixin, AbstractUser)
 from django.db import models
 import uuid
 from uuid import UUID
 
 
 class UserManager(BaseUserManager):
-    def create_user(self, email, first_name, last_name, password=None, **kwargs):
+    """
+    Custom user model manager where email is the unique identifiers
+    for authentication instead of usernames.
 
-        if first_name is None:
-            raise TypeError('Users must have a First Name')
+    Ref. https://testdriven.io/blog/django-custom-user-model/
+    """
 
-        if last_name is None:
-            raise TypeError('Users must have a Last Name')
-        if email is None:
-            raise TypeError('Users must have an email address.')
-
-        user = self.model(first_name=first_name, last_name=last_name, email=self.normalize_email(email), **kwargs)
+    def create_user(self, email, password, **extra_fields):
+        """
+        Create and save a user with the given email and password.
+        """
+        if not email:
+            raise ValueError(_("The Email must be set"))
+        email = self.normalize_email(email)
+        user = self.model(email=email, **extra_fields)
         user.set_password(password)
         user.save()
-
         return user
 
-    def create_superuser(self, email, password):
+    def create_superuser(self, email, password, **extra_fields):
         """
-        Create and return a `User` with superuser (admin) permissions.
+        Create and save a SuperUser with the given email and password.
         """
-        # if password is None:
-        #     raise TypeError('Superusers must have a password.')
+        extra_fields.setdefault("is_staff", True)
+        extra_fields.setdefault("is_superuser", True)
+        extra_fields.setdefault("is_active", True)
 
-        # user = self.create_user(email, password, last_name='User')
-        # user.is_superuser = True
-        # user.is_staff = True
-        # user.is_active = True
-        # user.save()
-
-        # return user
-
-        if not email:
-            raise ValueError('Users must have an email address.')
-
-        user = self.model(
-            first_name='Super',
-            last_name='User',
-            email=self.normalize_email(email),
-            is_staff=True,
-            is_superuser=True,
-
-        )
-
-        user.set_password(password)
-        user.is_active = True
-        user.save(using=self._db)
-        return user
+        if extra_fields.get("is_staff") is not True:
+            raise ValueError(_("Superuser must have is_staff=True."))
+        if extra_fields.get("is_superuser") is not True:
+            raise ValueError(_("Superuser must have is_superuser=True."))
+        return self.create_user(email, password, **extra_fields)
 
 
-class UserMaster(AbstractBaseUser):
+class UserMaster(AbstractUser):
     user_id = models.CharField(primary_key=True, default=uuid.uuid4, blank=False, unique=True, editable=False,
                                max_length=500, name=("user_id"), verbose_name=("User ID"))
-    first_name = models.CharField(max_length=255, blank=False)
-    last_name = models.CharField(max_length=255, blank=False)
+    username = None
     mobile = models.CharField(max_length=11, blank=True)
     email = models.EmailField(db_index=True, unique=True)
     is_confirmed = models.BooleanField(default=False)  # default is True when not using otp email verification
-    is_active = models.BooleanField(default=True)
-    is_staff = models.BooleanField(default=False)
     otp = models.IntegerField(editable=False, default=False)  # storing otp
     is_used = models.BooleanField(default=False)  # it becomes true when otp stored in db is already used
 

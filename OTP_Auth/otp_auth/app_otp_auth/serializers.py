@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from django.contrib.auth import authenticate
-from .models import MyUser
+from django.contrib.auth import authenticate, get_user_model
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+
+MyUser = get_user_model()
 
 
 class RegistrationSerializer(serializers.ModelSerializer):
@@ -50,7 +52,13 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
         fields = ('email', 'old_password', 'new_password', 'confirm_password')
 
 
-class LoginSerializer(serializers.Serializer):
+class LoginSerializer(TokenObtainPairSerializer):
+    """
+    LoginSerializer: which will authenticate credentials into database and generate jwt token.
+
+    Here, we preferred email to username.
+    because we have (USERNAME_FIELD = 'email') in UserMaster Model.
+    """
     email = serializers.CharField(max_length=255)
     # username = serializers.CharField(max_length=255, read_only=True)
     password = serializers.CharField(max_length=128, write_only=True)
@@ -58,29 +66,27 @@ class LoginSerializer(serializers.Serializer):
 
     class Meta:
         fields = ('email', 'password', 'token')
-    # you can also validate data here
-    # def validate(self, data):
 
-    #     email = data.get('email', None)
-    #     password = data.get('password', None)
-    #     if email is None:
-    #         raise serializers.ValidationError(
-    #             'An email address is required to log in.'
-    #         )
+    def validate(self, data):
+        breakpoint()
+        # If we want to add custom validation before calling superuser's validate method
+        email = data.get('email', None)
+        password = data.get('password', None)
+        if email is None:
+            raise serializers.ValidationError(
+                'An email address is required to log in.'
+            )
+        if password is None:
+            raise serializers.ValidationError(
+                'A password is required to log in.'
+            )
 
-    #     if password is None:
-    #         raise serializers.ValidationError(
-    #             'A password is required to log in.'
-    #         )
+        # Below will call TokenObtainPairSerializers' validate() method
+        token_data = super().validate(data)
+        # this token_data will be from TokenObtainPairSerializers' validate() method
+        # and will have tokens (access and refresh).
+        # to see click: TokenObtainPairSerializer
 
-    #     user = authenticate(username=email, password=password)
-
-    #     # if not user.is_active:
-    #     #     raise serializers.ValidationError(
-    #     #         'This user has been deactivated.'
-    #     #     )
-
-    #     return {
-    #         'email': user.email,
-    #         'token': user.token
-    #     }
+        # here, adding tokens in data dict and return them as validated_data.
+        data.update({"token": token_data, "user": self.user})
+        return data

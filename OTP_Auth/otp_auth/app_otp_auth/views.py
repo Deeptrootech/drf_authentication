@@ -6,19 +6,22 @@ import random
 import jwt
 from django.conf import settings
 from django.core.mail import send_mail
+from rest_framework_simplejwt.views import TokenObtainPairView
+
 from .serializers import LoginSerializer, RegistrationSerializer, VerifyOTPSerializer, ForgotPasswordSerializer, \
     ResetPasswordSerializer
-from django.contrib.auth import authenticate
+from django.contrib.auth import authenticate, get_user_model, login
 from passlib.hash import django_pbkdf2_sha256 as handler
-from rest_framework_jwt.serializers import VerifyJSONWebTokenSerializer
+# from rest_framework_jwt.serializers import VerifyJSONWebTokenSerializer
 from django.core.exceptions import ValidationError
 from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework_jwt.settings import api_settings
+# from rest_framework_jwt.settings import api_settings
 from django.contrib.auth.models import update_last_login
 
 MyUser = get_user_model()
-# generating OTP
 
+
+# generating OTP
 
 def generateOTP():
     global totp
@@ -45,6 +48,7 @@ class RegistrationAPIView(APIView):
         return Response({'Status': 'You cannot view all users data.....'})
 
     def post(self, request):
+        breakpoint()
         email = request.data['email']
         print(email)
 
@@ -66,13 +70,13 @@ class RegistrationAPIView(APIView):
                 recipient_list = [email]
                 message = message
                 subject = "OTP"
-                send_mail(
-                    subject,
-                    message,
-                    email_from,
-                    recipient_list,
-                    fail_silently=False,
-                )
+                # send_mail(
+                #     subject,
+                #     message,
+                #     email_from,
+                #     recipient_list,
+                #     fail_silently=False,
+                # )
 
                 return Response(serializer.data, status=status.HTTP_201_CREATED)
             else:
@@ -182,37 +186,29 @@ class ResetPasswordView(APIView):
 
 
 class LoginAPIView(APIView):
+    """
+    Used to generates a jwt token and login user.
+    """
     permission_classes = (AllowAny,)
     serializer_class = LoginSerializer
 
     def post(self, request):
         serializer = self.serializer_class(data=request.data)
-        email = request.data['email']
-        print('email', email)
-        filter_data = MyUser.objects.filter(email=email).values('is_active')
-        print('filter_data', filter_data)
-        if filter_data.exists():
-            val = filter_data[0]['is_active']
-        else:
-            return Response("Email is not Registered", status=status.HTTP_400_BAD_REQUEST)
 
-        if val:
-            if serializer.is_valid():
-                user = authenticate(
-                    username=request.data['email'], password=request.data['password'])
-                update_last_login(None, user)
-                if user is not None and user.is_confirmed and user.is_active:  # change according to yourself
-                    jwt_payload_handler = api_settings.JWT_PAYLOAD_HANDLER
-                    jwt_encode_handler = api_settings.JWT_ENCODE_HANDLER
-                    payload = jwt_payload_handler(user)
-                    token = jwt_encode_handler(payload)
-                    return Response({'msg': 'Login successful', 'is_confirmed': user.is_confirmed, 'token': token,
-                                     'first_name': user.first_name, 'last_name': user.last_name,
-                                     }, status=status.HTTP_200_OK)
-                else:
-                    return Response({'msg': 'Account not approved or wrong Password.'}, status=status.HTTP_409_CONFLICT)
-            else:
-                return Response({'msg': 'Invalid data'}, status=status.HTTP_401_UNAUTHORIZED)
+        # Below, will call validate() method of related serializer.
+        # which will check some custom validations and.
+        # if input data validated then call authenticate() method to verifying the user credentials.
+        # if user is not none and is_active then generate JWT token.
+        # and return it in validated data.
+        if serializer.is_valid():
+            validated_data = serializer.validated_data
 
+            # login user
+            authenticated_user = validated_data["user"]
+            login(request, authenticated_user)
+            
+            return Response(
+                {'msg': 'Login successful', 'user': validated_data['email'], 'token': validated_data['token']},
+                status=status.HTTP_200_OK)
         else:
-            return Response({'Error': 'Not a valid user'}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({'msg': 'Invalid data'}, status=status.HTTP_400_BAD_REQUEST)
