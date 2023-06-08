@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from django.contrib.auth import authenticate, get_user_model
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
+from rest_framework_simplejwt.serializers import TokenObtainPairSerializer, TokenObtainSerializer
 
 MyUser = get_user_model()
 
@@ -52,7 +52,7 @@ class ResetPasswordSerializer(serializers.ModelSerializer):
         fields = ('email', 'old_password', 'new_password', 'confirm_password')
 
 
-class LoginSerializer(TokenObtainPairSerializer):
+class LoginSerializer(TokenObtainSerializer):
     """
     LoginSerializer: which will authenticate credentials into database and generate jwt token.
 
@@ -80,12 +80,30 @@ class LoginSerializer(TokenObtainPairSerializer):
                 'A password is required to log in.'
             )
 
-        # Below will call TokenObtainPairSerializers' validate() method
-        token_data = super().validate(data)
-        # this token_data will be from TokenObtainPairSerializers' validate() method
-        # and will have tokens (access and refresh).
-        # to see click: TokenObtainPairSerializer
+        # 1) Only to authenticate user from database (`coz using 2F varification)
+        authenticated_user = super().validate(data)
+        breakpoint()
+        if self.user is not None and self.user.is_confirmed and self.user.is_active:
+            refresh = self.get_token(self.user)
 
-        # here, adding tokens in data dict and return them as validated_data.
-        data.update({"token": token_data, "user": self.user})
-        return data
+            refresh = str(refresh)
+            access = str(refresh.access_token)
+
+            token_data = {"refresh": refresh, "access": access}
+            if api_settings.UPDATE_LAST_LOGIN:
+                update_last_login(None, self.user)
+
+            data.update({"token": token_data, "user": self.user})
+            return data
+        raise serializers.ValidationError('Account may not approved or wrong Password.')
+
+        # # 2) To authenticate user and Get access and refresh tokens. (`coz not using 2F varification)
+        # # Below will call TokenObtainPairSerializers' validate() method
+        # token_data = super().validate(data)
+        # # this token_data will be from TokenObtainPairSerializer's validate() method
+        # # and will have tokens (access and refresh).
+        # # to see click: TokenObtainPairSerializer
+        #
+        # # here, adding tokens in data dict and return them as validated_data.
+        # data.update({"token": token_data, "user": self.user})
+        # return data
